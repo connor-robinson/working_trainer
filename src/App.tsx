@@ -132,8 +132,8 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
   s.push(`Start: Eq(1) ${eqToString(e1)},  Eq(2) ${eqToString(e2)}`);
   if(eliminate==='x'){
     const k1 = lcmX/Math.abs(e1.a), k2 = lcmX/Math.abs(e2.a), op = Math.sign(e1.a)===Math.sign(e2.a)?'-':'+';
-    const E1 = {a:e1.a*k1,b:e1.b*k1,d:e1.d*k1};
-    const E2 = {a:e2.a*k2,b:e2.b*k2,d:e2.d*k2};
+    const E1 = {a:e1.a*k1,b:e1.b*k1,c:0,d:e1.d*k1};
+    const E2 = {a:e2.a*k2,b:e2.b*k2,c:0,d:e2.d*k2};
     s.push(`Make |x| match: multiply Eq(1) by ${k1} → (${E1.a})x + (${E1.b})y = ${E1.d}`);
     s.push(`Multiply Eq(2) by ${k2} → (${E2.a})x + (${E2.b})y = ${E2.d}`);
     const By = E1.b - (op==='-'?E2.b:-E2.b);
@@ -143,8 +143,8 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
     s.push(`Back-substitute into Eq(1) and solve for x (see exact fractions below).`);
   } else {
     const k1 = lcmY/Math.abs(e1.b), k2 = lcmY/Math.abs(e2.b), op = Math.sign(e1.b)===Math.sign(e2.b)?'-':'+';
-    const E1 = {a:e1.a*k1,b:e1.b*k1,d:e1.d*k1};
-    const E2 = {a:e2.a*k2,b:e2.b*k2,d:e2.d*k2};
+    const E1 = {a:e1.a*k1,b:e1.b*k1,c:0,d:e1.d*k1};
+    const E2 = {a:e2.a*k2,b:e2.b*k2,c:0,d:e2.d*k2};
     s.push(`Make |y| match: multiply Eq(1) by ${k1} → (${E1.a})x + (${E1.b})y = ${E1.d}`);
     s.push(`Multiply Eq(2) by ${k2} → (${E2.a})x + (${E2.b})y = ${E2.d}`);
     const Bx = E1.a - (op==='-'?E2.a:-E2.a);
