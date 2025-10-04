@@ -4,6 +4,9 @@ let Icons: any = {};
 try { Icons = require("lucide-react"); } catch { Icons = new Proxy({}, { get: () => (p: any) => <span {...p}>⦿</span> }); }
 const { Calculator, AlarmClock, Play, Pause, RotateCcw, Sparkles, CheckCircle2, XCircle, ListTree } = Icons;
 
+// Serif stack for exam-like questions
+const examFont = { fontFamily: 'Cambria, Georgia, "Times New Roman", ui-serif, serif' } as React.CSSProperties;
+
 // ===================== Types =====================
 type Difficulty = "easy" | "medium" | "hard";
 type Mode = "2x2" | "3x3";
@@ -130,7 +133,7 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
   const s: string[] = [];
   s.push(`Start: Eq(1) ${eqToString(e1)},  Eq(2) ${eqToString(e2)}`);
   if(eliminate==='x'){
-    const k1 = lcmX/Math.abs(e1.a), k2 = lcmX/Math.abs(e2.a), op = Math.sign(e1.a)===Math.sign(e2.a)?'-':'+', sx=Math.sign(e1.a), sy=Math.sign(e2.a);
+    const k1 = lcmX/Math.abs(e1.a), k2 = lcmX/Math.abs(e2.a), op = Math.sign(e1.a)===Math.sign(e2.a)?'-':'+';
     const E1 = {a:e1.a*k1,b:e1.b*k1,d:e1.d*k1};
     const E2 = {a:e2.a*k2,b:e2.b*k2,d:e2.d*k2};
     s.push(`Make |x| match: multiply Eq(1) by ${k1} → (${E1.a})x + (${E1.b})y = ${E1.d}`);
@@ -138,10 +141,10 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
     const By = E1.b - (op==='-'?E2.b:-E2.b);
     const Bd = E1.d - (op==='-'?E2.d:-E2.d);
     s.push(`Eliminate x: Eq(1) ${op} Eq(2) → (${By})y = ${Bd}`);
-    const yNum = Bd; const yDen = By; const yS = simplifyFraction(yNum, yDen); s.push(`y = ${fracToText(yS.num, yS.den)}`);
-    const xVal = (sol as any).x; const yVal = (sol as any).y; s.push(`Back-substitute into Eq(1): x = ${(xVal).toFixed(4)} ( = ${fracToText(sol!.xNum, sol!.xDen)})`);
+    const yS = simplifyFraction(Bd, By); s.push(`y = ${fracToText(yS.num, yS.den)}`);
+    s.push(`Back-substitute into Eq(1) and solve for x (see exact fractions below).`);
   } else {
-    const k1 = lcmY/Math.abs(e1.b), k2 = lcmY/Math.abs(e2.b), op = Math.sign(e1.b)===Math.sign(e2.b)?'-':'+', sx=Math.sign(e1.b), sy=Math.sign(e2.b);
+    const k1 = lcmY/Math.abs(e1.b), k2 = lcmY/Math.abs(e2.b), op = Math.sign(e1.b)===Math.sign(e2.b)?'-':'+';
     const E1 = {a:e1.a*k1,b:e1.b*k1,d:e1.d*k1};
     const E2 = {a:e2.a*k2,b:e2.b*k2,d:e2.d*k2};
     s.push(`Make |y| match: multiply Eq(1) by ${k1} → (${E1.a})x + (${E1.b})y = ${E1.d}`);
@@ -149,16 +152,39 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
     const Bx = E1.a - (op==='-'?E2.a:-E2.a);
     const Bd = E1.d - (op==='-'?E2.d:-E2.d);
     s.push(`Eliminate y: Eq(1) ${op} Eq(2) → (${Bx})x = ${Bd}`);
-    const xNum = Bd; const xDen = Bx; const xS = simplifyFraction(xNum, xDen); s.push(`x = ${fracToText(xS.num, xS.den)}`);
-    const xVal = (sol as any).x; const yVal = (sol as any).y; s.push(`Back-substitute into Eq(1): y = ${(yVal).toFixed(4)} ( = ${fracToText(sol!.yNum, sol!.yDen)})`);
+    const xS = simplifyFraction(Bd, Bx); s.push(`x = ${fracToText(xS.num, xS.den)}`);
+    s.push(`Back-substitute into Eq(1) and solve for y (see exact fractions below).`);
+  }
+  if(sol){
+    s.push(`Exact: x = ${fracToText(sol.xNum, sol.xDen)}, y = ${fracToText(sol.yNum, sol.yDen)}`);
   }
   return s;
 }
 
+// ===================== Self-tests (lightweight) =====================
+function runSelfTests(){
+  // 2x2 simple
+  const e1: EquationStd = { a:2, b:3, d:7 }; // 2x + 3y = 7
+  const e2: EquationStd = { a:1, b:-1, d:1 }; // x - y = 1 → x = 1 + y
+  const s2 = solve2(e1,e2);
+  console.assert(s2 && approx(s2.x,2) && approx(s2.y,1), "2x2 test failed");
+
+  // 3x3 simple
+  const g1: EquationStd = { a:1,b:1,c:1,d:6 }; // x+y+z=6
+  const g2: EquationStd = { a:1,b:2,c:3,d:14 }; // x+2y+3z=14
+  const g3: EquationStd = { a:2,b:-1,c:1,d:5 }; // 2x-y+z=5
+  const s3 = solve3([g1,g2,g3]);
+  console.assert(s3 && approx(s3.x,2) && approx(s3.y,1) && approx(s3.z,3), "3x3 test failed");
+
+  // Fractional 2x2 (x=3/2, y=-5/4) using Cramer's rule back-check
+  const f1: EquationStd = { a:4, b:0, d:6 };   // 4x = 6
+  const f2: EquationStd = { a:0, b:4, d:-5 };  // 4y = -5
+  const sf = solve2(f1,f2);
+  console.assert(sf && approx(sf.x,1.5) && approx(sf.y,-1.25), "Fraction 2x2 test failed");
+}
+
 // ===================== Component =====================
 export default function SimulSolveMinimal(){
-  const examFont = { fontFamily: 'Cambria, Georgia, "Times New Roman", ui-serif, serif' } as React.CSSProperties;
-
   // controls
   const [mode, setMode] = useState<Mode>("2x2");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
@@ -175,7 +201,6 @@ export default function SimulSolveMinimal(){
   const [inputErr, setInputErr] = useState<Record<string,string>>({});
   const [attemptsOnThis, setAttemptsOnThis] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [showWork, setShowWork] = useState(false);
 
   // stats
   const [session, setSession] = useState({ attempts:0, correct:0, timeSec:0 });
@@ -187,7 +212,9 @@ export default function SimulSolveMinimal(){
   // timer
   useEffect(()=>{ if(!running) return; const id=setInterval(()=>setElapsed(e=>e+0.1),100); return ()=>clearInterval(id); },[running]);
   // reset on new problem
-  useEffect(()=>{ setElapsed(0); setAnswer({}); setStatus("idle"); setExplain({reasons:[],steps:[]}); setInputErr({}); setAttemptsOnThis(0); setRevealed(false); setShowWork(false); },[p.id]);
+  useEffect(()=>{ setElapsed(0); setAnswer({}); setStatus("idle"); setExplain({reasons:[],steps:[]}); setInputErr({}); setAttemptsOnThis(0); setRevealed(false); },[p.id]);
+  // self-tests once
+  useEffect(()=>{ runSelfTests(); },[]);
 
   const progress = Math.min(100, Math.round(100*elapsed/targetSeconds));
 
@@ -200,7 +227,12 @@ export default function SimulSolveMinimal(){
   const workedSteps = useMemo(()=>{
     if(!solved) return [] as string[];
     if(p.mode==="2x2") return worked2x2(p, solved as any);
-    return buildOptimalSteps(p);
+    return [
+      "Gaussian elimination outline:",
+      "1) Pivot on row 1; eliminate x from rows 2 & 3.",
+      "2) Pivot row 2; eliminate y from row 3.",
+      "3) Back‑substitute to get z → y → x.",
+    ];
   }, [p, solved]);
 
   function submit(){
@@ -214,8 +246,8 @@ export default function SimulSolveMinimal(){
 
     const x = parseFraction(answer.x??""); const y=parseFraction(answer.y??""); const z=parseFraction(answer.z??"");
     let ok=false; let feedback: string[] = []; let correctText="";
-    if(sol2){ ok = approx(x, sol2.x) && approx(y, sol2.y); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)-p.eqs[1].d; feedback.push(`Residuals: Eq1 ${r1.toFixed(2)}, Eq2 ${r2.toFixed(2)}`); correctText=`x = ${fracToText(sol2.xNum,sol2.xDen)}, y = ${fracToText(sol2.yNum,sol2.yDen)}`; } }
-    if(sol3){ ok = approx(x, sol3.x) && approx(y, sol3.y) && approx(z, sol3.z); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)+(p.eqs[0].c??0)*(z||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)+(p.eqs[1].c??0)*(z||0)-p.eqs[1].d; const r3=p.eqs[2].a*(x||0)+p.eqs[2].b*(y||0)+(p.eqs[2].c??0)*(z||0)-p.eqs[2].d; feedback.push(`Residuals: Eq1 ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}, Eq(3) ${r3.toFixed(2)}`); correctText=`x ≈ ${toRationalApprox(sol3.x)}, y ≈ ${toRationalApprox(sol3.y)}, z ≈ ${toRationalApprox(sol3.z)}`; } }
+    if(sol2){ ok = approx(x, sol2.x) && approx(y, sol2.y); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)-p.eqs[1].d; feedback.push(`Residuals: Eq(1) ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}`); correctText=`x = ${fracToText(sol2.xNum,sol2.xDen)}, y = ${fracToText(sol2.yNum,sol2.yDen)}`; } }
+    if(sol3){ ok = approx(x, sol3.x) && approx(y, sol3.y) && approx(z, sol3.z); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)+(p.eqs[0].c??0)*(z||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)+(p.eqs[1].c??0)*(z||0)-p.eqs[1].d; const r3=p.eqs[2].a*(x||0)+p.eqs[2].b*(y||0)+(p.eqs[2].c??0)*(z||0)-p.eqs[2].d; feedback.push(`Residuals: Eq(1) ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}, Eq(3) ${r3.toFixed(2)}`); correctText=`x ≈ ${toRationalApprox(sol3.x)}, y ≈ ${toRationalApprox(sol3.y)}, z ≈ ${toRationalApprox(sol3.z)}`; } }
 
     const nextTries = ok ? 0 : (attemptsOnThis + 1);
     const revealNow = !ok && nextTries >= 2;
@@ -225,7 +257,7 @@ export default function SimulSolveMinimal(){
     setExplain(
       ok
         ? { reasons:["Nice! Your values satisfy all equations."], steps:[] }
-        : { reasons: revealNow? [...feedback, "Answer revealed after two attempts."] : feedback, steps: buildOptimalSteps(p), correctText: revealNow? correctText : undefined }
+        : { reasons: revealNow? [...feedback, "Answer revealed after two attempts."] : feedback, steps: workedSteps, correctText: revealNow? correctText : undefined }
     );
     setStatus(ok?"correct":"wrong");
 
@@ -253,7 +285,7 @@ export default function SimulSolveMinimal(){
   // ===================== UI =====================
   return (
     <div className="min-h-screen w-full text-gray-100 bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950">
-      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-5">
+      <div className="max-w-3xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-center gap-3">
           <Calculator className="w-6 h-6 text-blue-400"/>
@@ -265,7 +297,7 @@ export default function SimulSolveMinimal(){
         </div>
 
         {/* Controls */}
-        <div className="rounded-xl border border-gray-200/10 bg-white/5 p-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="rounded-2xl border border-gray-200/10 bg-white/5 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <fieldset>
             <div className="text-xs uppercase text-gray-400 mb-1">Mode</div>
             <div className="flex flex-wrap gap-2">
@@ -297,13 +329,13 @@ export default function SimulSolveMinimal(){
               <input type="number" value={targetSeconds} onChange={e=>setTargetSeconds(Math.max(20, Number(e.target.value||120)))} className="w-24 bg-black/30 border border-gray-700 rounded-lg px-3 py-2"/>
             </div>
           </fieldset>
-          <div className="flex items-end">
-            <button onClick={resetStats} className="ml-auto px-3 py-2 rounded-lg border border-gray-700 hover:bg-black/30">Reset stats</button>
+          <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-end">
+            <button onClick={resetStats} className="px-3 py-2 rounded-lg border border-gray-700 hover:bg-black/30">Reset stats</button>
           </div>
         </div>
 
         {/* Problem */}
-        <div className="rounded-xl border border-gray-200/10 bg-white/5 p-4 space-y-3">
+        <div className="rounded-2xl border border-gray-200/10 bg-white/5 p-5 space-y-4">
           <div className="flex items-center gap-3">
             <h2 className="font-semibold">Solve the system</h2>
             <button onClick={newProblem} className="ml-auto px-3 py-2 rounded-lg border border-blue-400/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 flex items-center gap-2"><Sparkles className="w-4 h-4"/> New</button>
@@ -313,76 +345,61 @@ export default function SimulSolveMinimal(){
               <div key={i} className="bg-black/30 border border-gray-800 rounded-lg px-3 py-2">Eq({i+1}): {line}</div>
             ))}
           </div>
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             {p.variables.map(v => (
-              <label key={v} className="flex items-center gap-2">
-                <span className="text-sm text-gray-300">{v} =</span>
-                <input value={(answer as any)[v]??""} onChange={e=>{ setAnswer({...answer,[v]:e.target.value}); validateField(v, e.target.value); }} placeholder={ansType==="fractions"?"e.g. 9/4":"e.g. 3"} className="w-28 px-3 py-2 rounded-lg bg-black/30 border border-gray-700 focus:ring-2 focus:ring-blue-500 font-mono"/>
-                {inputErr[v] && <span className="text-xs text-red-400 ml-2">{inputErr[v]}</span>}
+              <label key={v} className="flex items-center gap-3 rounded-xl border border-gray-800 bg-black/30 px-3 py-2">
+                <span className="text-sm text-gray-300 shrink-0 w-6 text-right">{v} =</span>
+                <input value={(answer as any)[v]??""} onChange={e=>{ setAnswer({...answer,[v]:e.target.value}); validateField(v, e.target.value); }} placeholder={ansType==="fractions"?"e.g. 9/4":"e.g. 3"} className="w-full px-3 py-2 rounded-lg bg-black/30 border border-gray-700 focus:ring-2 focus:ring-blue-500 font-mono"/>
+                {inputErr[v] && <span className="text-xs text-red-400 ml-1">{inputErr[v]}</span>}
               </label>
             ))}
-            <button onClick={submit} className="px-4 py-2 rounded-lg border border-blue-400/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4"/> Submit
-            </button>
+          </div>
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex gap-3">
+              <button onClick={submit} className="px-4 py-2 rounded-xl border border-blue-400/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4"/> Submit
+              </button>
+              <button onClick={newProblem} className="px-3 py-2 rounded-xl border border-gray-700 hover:bg-black/30">New problem</button>
+            </div>
             {status!=="idle" && (
               <span className={`text-sm ${status==="correct"?"text-emerald-400":"text-red-400"} flex items-center gap-1`}>
                 {status==="correct"?<>Correct<CheckCircle2 className="w-4 h-4"/></>:<>Try again<XCircle className="w-4 h-4"/></>}
               </span>
             )}
           </div>
-
-          {/* Solution reveal */}
-          {(revealed || status==="correct") && solved && (
-            <div className="rounded-lg border border-green-400/30 bg-green-500/10 px-3 py-2 flex flex-wrap items-center gap-3">
-              <span className="text-sm">Solution:</span>
-              {p.mode==="2x2" ? (
-                <>
-                  <span className="font-mono">x = {fracToText((solved as any).xNum,(solved as any).xDen)}</span>
-                  <span className="font-mono">y = {fracToText((solved as any).yNum,(solved as any).yDen)}</span>
-                </>
-              ) : (
-                <>
-                  <span className="font-mono">x ≈ {toRationalApprox((solved as any).x)}</span>
-                  <span className="font-mono">y ≈ {toRationalApprox((solved as any).y)}</span>
-                  <span className="font-mono">z ≈ {toRationalApprox((solved as any).z)}</span>
-                </>
-              )}
-              <button onClick={()=>setShowWork(s=>!s)} className="ml-auto px-3 py-1.5 rounded-md border border-blue-400/40 text-blue-200 bg-blue-500/10 hover:bg-blue-500/20 flex items-center gap-2"><ListTree className="w-4 h-4"/> {showWork?"Hide steps":"Show steps"}</button>
-            </div>
-          )}
-          {showWork && workedSteps.length>0 && (
-            <div className="rounded-lg border border-gray-200/10 bg-white/5 px-3 py-3">
-              <div className="text-sm text-gray-300 mb-2">Worked solution ({p.mode})</div>
-              <ol className="list-decimal pl-5 space-y-1 text-sm">
-                {workedSteps.map((s,i)=>(<li key={i}>{s}</li>))}
-              </ol>
-            </div>
-          )}
-        </div>
-
-        {/* Feedback */}
-        <div className="rounded-xl border border-gray-200/10 bg-white/5 p-4">
-          <h3 className="font-semibold mb-2">Feedback</h3>
-          <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-            {explain.reasons.map((r,i)=>(<li key={i}>{r}</li>))}
-          </ul>
-          {explain.correctText && <div className="mt-2 text-sm text-emerald-300">{explain.correctText}</div>}
         </div>
 
         {/* Timer */}
-        <div className="rounded-xl border border-gray-200/10 p-4 bg-white/5">
+        <div className="rounded-2xl border border-gray-200/10 p-4 bg-white/5">
           <div className="flex items-center gap-3">
             <AlarmClock className="w-5 h-5"/>
             <div className="text-lg tabular-nums">{elapsed.toFixed(1)}s</div>
             <div className="ml-auto flex items-center gap-2">
-              <button onClick={()=>setRunning(r=>!r)} className={`px-3 py-1.5 rounded-lg border ${running?"border-red-400/50 text-red-300":"border-gray-700"}`}>{running? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}</button>
-              <button onClick={()=>setElapsed(0)} className="px-3 py-1.5 rounded-lg border border-gray-700"><RotateCcw className="w-4 h-4"/></button>
+              <button onClick={()=>setRunning(r=>!r)} className={`px-3 py-1.5 rounded-xl border ${running?"border-red-500/50 text-red-300":"border-gray-700"}`}>{running? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}</button>
+              <button onClick={()=>setElapsed(0)} className="px-3 py-1.5 rounded-xl border border-gray-700"><RotateCcw className="w-4 h-4"/></button>
             </div>
           </div>
           <div className="h-2 rounded-full bg-black/30 overflow-hidden mt-2">
             <div className="h-full bg-blue-300/80" style={{width:`${progress}%`}}/>
           </div>
           <div className="mt-1 text-xs text-gray-400">{progress}% of {targetSeconds}s target</div>
+        </div>
+
+        {/* Feedback */}
+        <div className="rounded-2xl border border-gray-200/10 bg-white/5 p-4">
+          <h3 className="font-semibold mb-2">Feedback</h3>
+          <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+            {explain.reasons.map((r,i)=>(<li key={i}>{r}</li>))}
+          </ul>
+          {explain.correctText && <div className="mt-2 text-sm text-emerald-300">{explain.correctText}</div>}
+          {explain.steps.length>0 && (
+            <div className="mt-3">
+              <div className="text-sm text-gray-400 mb-1">Optimal steps</div>
+              <ol className="list-decimal pl-5 text-sm text-gray-300 space-y-1">
+                {explain.steps.map((s,i)=>(<li key={i}>{s}</li>))}
+              </ol>
+            </div>
+          )}
         </div>
 
         {/* Graphs */}
