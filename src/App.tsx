@@ -162,23 +162,23 @@ function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
 // ===================== Self-tests (lightweight) =====================
 function runSelfTests(){
   // 2x2 simple
-  const e1: EquationStd = { a:2, b:3, d:7 }; // 2x + 3y = 7
-  const e2: EquationStd = { a:1, b:-1, d:1 }; // x - y = 1 → x = 1 + y
+  const e1: EquationStd = { a:2, b:3, c:0, d:7 }; // 2x + 3y = 7
+  const e2: EquationStd = { a:1, b:-1, c:0, d:1 }; // x - y = 1 → x = 1 + y
   const s2 = solve2(e1,e2);
-  console.assert(s2 && approx(s2.x,2) && approx(s2.y,1), "2x2 test failed");
+  console.assert(!!s2 && approx(s2.x,2) && approx(s2.y,1), "2x2 test failed");
 
   // 3x3 simple
   const g1: EquationStd = { a:1,b:1,c:1,d:6 }; // x+y+z=6
   const g2: EquationStd = { a:1,b:2,c:3,d:14 }; // x+2y+3z=14
   const g3: EquationStd = { a:2,b:-1,c:1,d:5 }; // 2x-y+z=5
   const s3 = solve3([g1,g2,g3]);
-  console.assert(s3 && approx(s3.x,2) && approx(s3.y,1) && approx(s3.z,3), "3x3 test failed");
+  console.assert(!!s3 && approx(s3.x,2) && approx(s3.y,1) && approx(s3.z,3), "3x3 test failed");
 
   // Fractional 2x2 (x=3/2, y=-5/4) using Cramer's rule back-check
-  const f1: EquationStd = { a:4, b:0, d:6 };   // 4x = 6
-  const f2: EquationStd = { a:0, b:4, d:-5 };  // 4y = -5
+  const f1: EquationStd = { a:4, b:0, c:0, d:6 };   // 4x = 6
+  const f2: EquationStd = { a:0, b:4, c:0, d:-5 };  // 4y = -5
   const sf = solve2(f1,f2);
-  console.assert(sf && approx(sf.x,1.5) && approx(sf.y,-1.25), "Fraction 2x2 test failed");
+  console.assert(!!sf && approx(sf.x,1.5) && approx(sf.y,-1.25), "Fraction 2x2 test failed");
 }
 
 // ===================== Component =====================
