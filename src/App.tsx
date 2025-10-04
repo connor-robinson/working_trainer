@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-// Icons: lucide-react if available, otherwise placeholders to avoid crashes
-let Icons: any = {};
-try { Icons = require("lucide-react"); } catch { Icons = new Proxy({}, { get: () => (p: any) => <span {...p}>⦿</span> }); }
-const { Calculator, AlarmClock, Play, Pause, RotateCcw, Sparkles, CheckCircle2, XCircle, ListTree } = Icons;
+// Icons: import directly (simplest + TS friendly)
+import { Calculator, AlarmClock, Play, Pause, RotateCcw, Sparkles, CheckCircle2, XCircle } from "lucide-react";
 
 // Serif stack for exam-like questions
 const examFont = { fontFamily: 'Cambria, Georgia, "Times New Roman", ui-serif, serif' } as React.CSSProperties;
@@ -59,7 +57,7 @@ function formatSide(ax:number, by:number, cz:number|undefined, k:number, include
   if (k!==0) toks.push({coef:k,t:"const"});
   if (ax!==0) toks.push({coef:ax,t:"x"});
   if (by!==0) toks.push({coef:by,t:"y"});
-  if (includeZ && cz && cz!==0) toks.push({coef:cz,t:"z"});
+  if (includeZ && Boolean(cz) && cz !== 0) toks.push({coef:cz,t:"z"});
   if (toks.length===0) return "0";
   let out="", first=true;
   for(const tok of toks){ const sign = tok.coef<0?"-":"+"; const mag=Math.abs(tok.coef); const core = tok.t==="const"?`${mag}`:`${mag===1?"":mag}${tok.t}`; if(first){ out += (tok.coef<0?"- ":"") + core; first=false; } else { out += ` ${sign} ${core}`; } }
@@ -122,7 +120,7 @@ function genProblem(mode: Mode, difficulty: Difficulty, ansType: AnswerType){ re
 
 // ===================== Worked solution builder =====================
 function eqToString(e: EquationStd){
-  const left = formatSide(e.a, e.b, e.c, 0, e.c!==undefined);
+  const left = formatSide(e.a, e.b, e.c, 0, e.c !== undefined ? true : false);
   return `${left} = ${e.d}`;
 }
 function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
