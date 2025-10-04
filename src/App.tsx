@@ -10,7 +10,7 @@ type Difficulty = "easy" | "medium" | "hard";
 type Mode = "2x2" | "3x3";
 type AnswerType = "integers" | "fractions";
 
-interface EquationStd { a: number; b: number; c?: number; d: number; } // ax + by (+ cz) = d
+interface EquationStd { a: number; b: number; c: number; d: number; } // ax + by (+ cz) = d
 interface Problem {
   id: string;
   mode: Mode;
@@ -40,7 +40,7 @@ function solve2(e1: EquationStd, e2: EquationStd){
   return { x: Dx/D, y: Dy/D, xNum: fx.num, xDen: fx.den, yNum: fy.num, yDen: fy.den } as const;
 }
 function solve3(eq: EquationStd[]){
-  const A = eq.map(e=>[e.a,e.b,e.c??0,e.d]);
+  const A = eq.map(e=>[e.a,e.b,e.c,e.d]);
   for(let c=0;c<3;c++){
     let p=c; for(let r=c+1;r<3;r++) if(Math.abs(A[r][c])>Math.abs(A[p][c])) p=r;
     if(Math.abs(A[p][c])<1e-12) return null; if(p!==c)[A[p],A[c]]=[A[c],A[p]];
@@ -51,20 +51,20 @@ function solve3(eq: EquationStd[]){
 }
 
 // ===================== Display (scramble) =====================
-function formatSide(ax:number, by:number, cz:number|undefined, k:number, includeZ:boolean){
+function formatSide(ax:number, by:number, cz:number, k:number, includeZ:boolean){
   type Tok = { coef:number, t:"const"|"x"|"y"|"z" };
   const toks: Tok[] = [];
   if (k!==0) toks.push({coef:k,t:"const"});
   if (ax!==0) toks.push({coef:ax,t:"x"});
   if (by!==0) toks.push({coef:by,t:"y"});
-  if (includeZ && Boolean(cz) && cz !== 0) toks.push({coef:cz,t:"z"});
+  if (includeZ && cz !== 0) toks.push({coef:cz,t:"z"});
   if (toks.length===0) return "0";
   let out="", first=true;
   for(const tok of toks){ const sign = tok.coef<0?"-":"+"; const mag=Math.abs(tok.coef); const core = tok.t==="const"?`${mag}`:`${mag===1?"":mag}${tok.t}`; if(first){ out += (tok.coef<0?"- ":"") + core; first=false; } else { out += ` ${sign} ${core}`; } }
   return out;
 }
 function scrambleLinear(e: EquationStd, includeZ:boolean){
-  const a=e.a,b=e.b,c=(e.c??0),d=e.d;
+  const a=e.a,b=e.b,c=e.c,d=e.d;
   const axL=rnd(-3,3), axR=axL-a; const byL=rnd(-3,3), byR=byL-b; const czL=includeZ?rnd(-3,3):0, czR=includeZ?czL-c:0; const kL=rnd(-12,12), kR=kL-d;
   const L=formatSide(axL,byL,czL,kL,includeZ); const R=formatSide(axR,byR,czR,kR,includeZ);
   return `${L} = ${R}`;
@@ -91,8 +91,8 @@ function gen2x2(difficulty: Difficulty, ansType: AnswerType): Problem{
   let a = L*choice([-1,1])*choice(base), b = L*choice([-1,1])*choice(base);
   let c = L*choice([-1,1])*choice(base), d = L*choice([-1,1])*choice(base);
   if (a*d - b*c === 0) d += L;
-  const e1: EquationStd = { a, b, d: Math.trunc(a*sol.x + b*sol.y) };
-  const e2: EquationStd = { a:c, b:d, d: Math.trunc(c*sol.x + d*sol.y) };
+  const e1: EquationStd = { a, b, c: 0, d: Math.trunc(a*sol.x + b*sol.y) };
+  const e2: EquationStd = { a:c, b:d, c: 0, d: Math.trunc(c*sol.x + d*sol.y) };
   const display = [scrambleLinear(e1,false), scrambleLinear(e2,false)];
   return { id:id(), mode:"2x2", variables:["x","y"], eqs:[e1,e2], display };
 }
@@ -120,7 +120,7 @@ function genProblem(mode: Mode, difficulty: Difficulty, ansType: AnswerType){ re
 
 // ===================== Worked solution builder =====================
 function eqToString(e: EquationStd){
-  const left = formatSide(e.a, e.b, e.c, 0, e.c !== undefined ? true : false);
+  const left = formatSide(e.a, e.b, e.c, 0, e.c !== 0);
   return `${left} = ${e.d}`;
 }
 function worked2x2(prob: Problem, sol: ReturnType<typeof solve2>){
@@ -245,7 +245,7 @@ export default function SimulSolveMinimal(){
     const x = parseFraction(answer.x??""); const y=parseFraction(answer.y??""); const z=parseFraction(answer.z??"");
     let ok=false; let feedback: string[] = []; let correctText="";
     if(sol2){ ok = approx(x, sol2.x) && approx(y, sol2.y); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)-p.eqs[1].d; feedback.push(`Residuals: Eq(1) ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}`); correctText=`x = ${fracToText(sol2.xNum,sol2.xDen)}, y = ${fracToText(sol2.yNum,sol2.yDen)}`; } }
-    if(sol3){ ok = approx(x, sol3.x) && approx(y, sol3.y) && approx(z, sol3.z); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)+(p.eqs[0].c??0)*(z||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)+(p.eqs[1].c??0)*(z||0)-p.eqs[1].d; const r3=p.eqs[2].a*(x||0)+p.eqs[2].b*(y||0)+(p.eqs[2].c??0)*(z||0)-p.eqs[2].d; feedback.push(`Residuals: Eq(1) ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}, Eq(3) ${r3.toFixed(2)}`); correctText=`x ≈ ${toRationalApprox(sol3.x)}, y ≈ ${toRationalApprox(sol3.y)}, z ≈ ${toRationalApprox(sol3.z)}`; } }
+    if(sol3){ ok = approx(x, sol3.x) && approx(y, sol3.y) && approx(z, sol3.z); if(!ok){ const r1=p.eqs[0].a*(x||0)+p.eqs[0].b*(y||0)+p.eqs[0].c*(z||0)-p.eqs[0].d; const r2=p.eqs[1].a*(x||0)+p.eqs[1].b*(y||0)+p.eqs[1].c*(z||0)-p.eqs[1].d; const r3=p.eqs[2].a*(x||0)+p.eqs[2].b*(y||0)+p.eqs[2].c*(z||0)-p.eqs[2].d; feedback.push(`Residuals: Eq(1) ${r1.toFixed(2)}, Eq(2) ${r2.toFixed(2)}, Eq(3) ${r3.toFixed(2)}`); correctText=`x ≈ ${toRationalApprox(sol3.x)}, y ≈ ${toRationalApprox(sol3.y)}, z ≈ ${toRationalApprox(sol3.z)}`; } }
 
     const nextTries = ok ? 0 : (attemptsOnThis + 1);
     const revealNow = !ok && nextTries >= 2;
