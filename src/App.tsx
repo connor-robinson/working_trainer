@@ -51,7 +51,8 @@ function solve3(eq: EquationStd[]){
 }
 
 // ===================== Display (scramble) =====================
-function formatSide(ax:number, by:number, cz:number, k:number, includeZ:boolean){
+function formatSide(ax:number, by:number, cz:number, k:number, includeZ?:boolean){
+  const showZ = !!includeZ;
   type Tok = { coef:number, t:"const"|"x"|"y"|"z" };
   const toks: Tok[] = [];
   if (k!==0) toks.push({coef:k,t:"const"});
@@ -63,7 +64,8 @@ function formatSide(ax:number, by:number, cz:number, k:number, includeZ:boolean)
   for(const tok of toks){ const sign = tok.coef<0?"-":"+"; const mag=Math.abs(tok.coef); const core = tok.t==="const"?`${mag}`:`${mag===1?"":mag}${tok.t}`; if(first){ out += (tok.coef<0?"- ":"") + core; first=false; } else { out += ` ${sign} ${core}`; } }
   return out;
 }
-function scrambleLinear(e: EquationStd, includeZ:boolean){
+function scrambleLinear(e: EquationStd, includeZ?:boolean){
+  const showZ = !!includeZ;
   const a=e.a,b=e.b,c=e.c,d=e.d;
   const axL=rnd(-3,3), axR=axL-a; const byL=rnd(-3,3), byR=byL-b; const czL=includeZ?rnd(-3,3):0, czR=includeZ?czL-c:0; const kL=rnd(-12,12), kR=kL-d;
   const L=formatSide(axL,byL,czL,kL,includeZ); const R=formatSide(axR,byR,czR,kR,includeZ);
