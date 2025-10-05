@@ -102,7 +102,7 @@ function formatSide(ax:number, by:number, cz:number, k:number, includeZ?:boolean
 }
 function scrambleLinear(e: EquationStd, includeZ?:boolean){
   const a=e.a,b=e.b,c=e.c,d=e.d;
-  const axL=rnd(-3,3), axR=axL-a; const byL=rnd(-3,3), byR=byL-b; const czL=includeZ?rnd(-3,3):0, czR=includeZ?czL-c:0; const kL=rnd(-12,12), kR=kL-d;
+  const axL=rnd(-3,3), axR=axL-a; const byL=rnd(-3,3), byR=byL-b; const czL=includeZ?rnd(-3,3):0, czR=includeZ?czL-c:0; const kL=rnd(-12,12), kR=kL+d;
   const L=formatSide(axL,byL,czL,kL,includeZ); const R=formatSide(axR,byR,czR,kR,includeZ);
   return `${L} = ${R}`;
 }
